@@ -2,9 +2,7 @@ name: Test PicoDeprecated
 
 on:
     push:
-        branches:
-            - 'master'
-            - 'pico-3.0'
+        branches: [ 'master' ]
         tags: [ 'v*.*.*' ]
     pull_request: {}
     workflow_call: {}
