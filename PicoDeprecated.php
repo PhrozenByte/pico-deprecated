@@ -46,7 +46,7 @@ class PicoDeprecated extends AbstractPicoPlugin
      *
      * @var string
      */
-    public const VERSION = '3.0.0-dev';
+    public const VERSION = '3.0.0-alpha.3';
 
     /**
      * PicoDeprecated version ID
