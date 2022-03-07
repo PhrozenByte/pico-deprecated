@@ -25,6 +25,12 @@
         "issues": "https://github.com/picocms/pico-deprecated/issues",
         "source": "https://github.com/picocms/pico-deprecated"
     },
+    "repositories": {
+        "pico": {
+            "type": "vcs",
+            "url": "https://github.com/PhrozenByte/Pico"
+        }
+    },
     "require": {
         "php": ">=7.2.5",
         "picocms/pico": "self.version"
