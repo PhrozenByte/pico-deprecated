@@ -1,0 +1,20 @@
+name: Git release deployment
+
+on:
+    release:
+        types: [ 'published' ]
+
+jobs:
+    dummy:
+        name: Test trigger
+
+        runs-on: ubuntu-latest
+        permissions:
+            contents: read
+
+        steps:
+            -   name: Checkout repository
+                uses: actions/checkout@v2
+
+            -   name: List directory
+                run: ls -ahl .
