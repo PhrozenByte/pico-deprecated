@@ -4,7 +4,7 @@
  * in the version control history of the file, available from the following
  * original location:
  *
- * <https://github.com/picocms/pico-deprecated/blob/master/plugins/PicoPluginApi0CompatPlugin.php>
+ * <https://github.com/picocms/pico-deprecated/blob/master/plugins/PluginApi0Plugin.php>
  *
  * This file was created by splitting up an original file into multiple files,
  * which in turn was previously part of the project's main repository. The
@@ -18,49 +18,55 @@
  * License-Filename: LICENSE
  */
 
+namespace picocms\PicoDeprecated\Plugin;
+
+use picocms\PicoDeprecated\AbstractPluginApiPlugin;
+use Pico;
+use PicoDeprecated;
+use Twig\Environment as TwigEnvironment;
+
 /**
  * Maintains backward compatibility with plugins using API version 0, written
  * for Pico 0.9 and earlier
  *
  * @author  Daniel Rudolf
- * @link    http://picocms.org
- * @license http://opensource.org/licenses/MIT The MIT License
- * @version 2.1
+ * @link    https://picocms.org
+ * @license https://opensource.org/licenses/MIT The MIT License
+ * @version 3.0
  */
-class PicoPluginApi0CompatPlugin extends AbstractPicoPluginApiCompatPlugin
+class PluginApi0Plugin extends AbstractPluginApiPlugin
 {
     /**
-     * This plugin extends {@see PicoPluginApi1CompatPlugin} and
-     * {@see PicoThemeApi0CompatPlugin}
+     * This plugin extends {@see PluginApi1Plugin} and {@see ThemeApi0Plugin}
      *
      * @var string[]
      */
-    protected $dependsOn = array('PicoPluginApi1CompatPlugin', 'PicoThemeApi0CompatPlugin');
+    protected $dependsOn = [ PluginApi1Plugin::class, ThemeApi0Plugin::class ];
 
     /**
      * Map of core events matching event signatures of older API versions
      *
-     * @see AbstractPicoPluginApiCompatPlugin::handleEvent()
+     * @see AbstractPluginApiPlugin::handleEvent()
      *
      * @var array<string,string>
      */
-    protected $eventAliases = array(
-        'onConfigLoaded'      => array('config_loaded'),
-        'onRequestUrl'        => array('request_url'),
-        'onContentLoading'    => array('before_load_content'),
-        'on404ContentLoading' => array('before_404_load_content'),
-        'onMetaParsed'        => array('file_meta'),
-        'onContentParsing'    => array('before_parse_content'),
-        'onContentParsed'     => array('after_parse_content', 'content_parsed'),
-        'onTwigRegistration'  => array('before_twig_register'),
-        'onPageRendered'      => array('after_render')
-    );
+    protected $eventAliases = [
+        'onConfigLoaded' =>      [ 'config_loaded' ],
+        'onRequestUrl' =>        [ 'request_url' ],
+        'onContentLoading' =>    [ 'before_load_content' ],
+        'on404ContentLoading' => [ 'before_404_load_content' ],
+        'onMetaParsed' =>        [ 'file_meta' ],
+        'onContentParsing' =>    [ 'before_parse_content' ],
+        'onContentParsed' =>     [ 'after_parse_content', 'content_parsed' ],
+        'onTwigRegistration' =>  [ 'before_twig_register' ],
+        'onPageRendered' =>      [ 'after_render' ],
+    ];
 
     /**
      * Pico's request file
      *
      * @see Pico::$requestFile
-     * @see PicoPluginApi0CompatPlugin::onRequestFile()
+     * @see PluginApi0Plugin::onRequestFile()
      *
      * @var string|null
      */
@@ -114,7 +120,7 @@ class PicoPluginApi0CompatPlugin extends AbstractPicoPluginApiCompatPlugin
             define('CONFIG_DIR', $this->getPico()->getConfigDir());
         }
         if (!defined('LIB_DIR')) {
-            $picoReflector = new ReflectionClass('Pico');
+            $picoReflector = new \ReflectionClass(Pico::class);
             define('LIB_DIR', dirname($picoReflector->getFileName()) . '/');
         }
         if (!defined('PLUGINS_DIR')) {
@@ -136,9 +142,9 @@ class PicoPluginApi0CompatPlugin extends AbstractPicoPluginApiCompatPlugin
     }
 
     /**
-     * Sets PicoPluginApi1CompatPlugin::$requestFile
+     * Sets PluginApi0Plugin::$requestFile
      *
-     * @see PicoPluginApi0CompatPlugin::$requestFile
+     * @see PluginApi0Plugin::$requestFile
      *
      * @param string &$file absolute path to the content file to serve
      */
@@ -154,7 +160,7 @@ class PicoPluginApi0CompatPlugin extends AbstractPicoPluginApiCompatPlugin
      */
     public function on404ContentLoaded(&$rawContent)
     {
-        $this->triggerEvent('after_404_load_content', array(&$this->requestFile, &$rawContent));
+        $this->triggerEvent('after_404_load_content', [ &$this->requestFile, &$rawContent ]);
     }
 
     /**
@@ -164,7 +170,7 @@ class PicoPluginApi0CompatPlugin extends AbstractPicoPluginApiCompatPlugin
      */
     public function onContentLoaded(&$rawContent)
     {
-        $this->triggerEvent('after_load_content', array(&$this->requestFile, &$rawContent));
+        $this->triggerEvent('after_load_content', [ &$this->requestFile, &$rawContent ]);
     }
 
     /**
@@ -175,7 +181,7 @@ class PicoPluginApi0CompatPlugin extends AbstractPicoPluginApiCompatPlugin
      */
     public function onMetaParsing(&$rawContent, array &$headers)
     {
-        $this->triggerEvent('before_read_file_meta', array(&$headers));
+        $this->triggerEvent('before_read_file_meta', [ &$headers ]);
     }
 
     /**
@@ -185,7 +191,7 @@ class PicoPluginApi0CompatPlugin extends AbstractPicoPluginApiCompatPlugin
      */
     public function onSinglePageLoaded(array &$pageData)
     {
-        $this->triggerEvent('get_page_data', array(&$pageData, $pageData['meta']));
+        $this->triggerEvent('get_page_data', [ &$pageData, $pageData['meta'] ]);
     }
 
     /**
@@ -209,24 +215,24 @@ class PicoPluginApi0CompatPlugin extends AbstractPicoPluginApiCompatPlugin
         array &$nextPage = null
     ) {
         // remove keys of pages array
-        $plainPages = array();
+        $plainPages = [];
         foreach ($pages as &$plainPageData) {
             $plainPages[] = &$plainPageData;
         }
 
         // trigger event
-        $this->triggerEvent('get_pages', array(&$plainPages, &$currentPage, &$previousPage, &$nextPage));
+        $this->triggerEvent('get_pages', [ &$plainPages, &$currentPage, &$previousPage, &$nextPage ]);
 
         // re-index pages array
         $baseUrl = $this->getPico()->getBaseUrl();
         $baseUrlLength = strlen($baseUrl);
         $urlRewritingEnabled = $this->getPico()->isUrlRewritingEnabled();
 
-        $pages = array();
+        $pages = [];
         foreach ($plainPages as &$pageData) {
             if (!isset($pageData['id'])) {
-                if (substr($pageData['url'], 0, $baseUrlLength) === $baseUrl) {
-                    if ($urlRewritingEnabled && (substr($pageData['url'], $baseUrlLength, 1) === '?')) {
+                if (substr_compare($pageData['url'], $baseUrl, 0, $baseUrlLength) === 0) {
+                    if ($urlRewritingEnabled && (substr_compare($pageData['url'], '?', $baseUrlLength, 1) === 0)) {
                         $pageData['id'] = substr($pageData['url'], $baseUrlLength + 1);
                     } else {
                         $pageData['id'] = substr($pageData['url'], $baseUrlLength);
@@ -253,18 +259,18 @@ class PicoPluginApi0CompatPlugin extends AbstractPicoPluginApiCompatPlugin
      * Please note that the `before_render` event gets `$templateName` passed
      * without its file extension. The file extension is re-added later.
      *
-     * @param Twig_Environment &$twig          Twig instance
-     * @param string           &$templateName  file name of the template
-     * @param array            &$twigVariables template variables
+     * @param TwigEnvironment &$twig          Twig instance
+     * @param string          &$templateName  file name of the template
+     * @param array           &$twigVariables template variables
      */
-    public function onPageRendering(Twig_Environment &$twig, array &$twigVariables, &$templateName)
+    public function onPageRendering(TwigEnvironment &$twig, array &$twigVariables, &$templateName)
     {
-        $templateNameInfo = pathinfo($templateName) + array('extension' => '');
+        $templateNameInfo = pathinfo($templateName) + [ 'extension' => '' ];
 
         // the template name hasn't had a file extension in API v0
         $templateName = $templateNameInfo['filename'];
 
-        $this->triggerEvent('before_render', array(&$twigVariables, &$twig, &$templateName));
+        $this->triggerEvent('before_render', [ &$twigVariables, &$twig, &$templateName ]);
 
         // recover original file extension
         // we assume that all templates of a theme use the same file extension
@@ -274,7 +280,7 @@ class PicoPluginApi0CompatPlugin extends AbstractPicoPluginApiCompatPlugin
     /**
      * {@inheritDoc}
      */
-    public function handleCustomEvent($eventName, array $params = array())
+    public function handleCustomEvent($eventName, array $params = [])
     {
         // never trigger custom events
     }
@@ -282,7 +288,7 @@ class PicoPluginApi0CompatPlugin extends AbstractPicoPluginApiCompatPlugin
     /**
      * {@inheritDoc}
      */
-    public function triggerEvent($eventName, array $params = array())
+    public function triggerEvent($eventName, array $params = [])
     {
         // we don't support compat plugins using API v0, so no need to take care of compat plugins here
         // API v0 events are also triggered on plugins using API v1 (but not later)
@@ -291,7 +297,7 @@ class PicoPluginApi0CompatPlugin extends AbstractPicoPluginApiCompatPlugin
 
         foreach ($plugins as $plugin) {
             if (method_exists($plugin, $eventName)) {
-                call_user_func_array(array($plugin, $eventName), $params);
+                call_user_func_array([ $plugin, $eventName ], $params);
             }
         }
     }

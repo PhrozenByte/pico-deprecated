@@ -16,6 +16,10 @@
  * License-Filename: LICENSE
  */
 
+use picocms\PicoDeprecated\Plugin\MainPlugin;
+use picocms\PicoDeprecated\PluginApiPluginInterface;
+use picocms\PicoDeprecated\PluginInterface;
+
 /**
  * Maintain backward compatibility to older Pico releases
  *
@@ -28,49 +32,70 @@
  * API versions than the one of Pico's core, even when there was just the
  * slightest change.
  *
- * {@see http://picocms.org/plugins/deprecated/} for a full list of features.
+ * {@see https://picocms.org/plugins/deprecated/} for a full list of features.
  *
  * @author  Daniel Rudolf
- * @link    http://picocms.org
- * @license http://opensource.org/licenses/MIT The MIT License
- * @version 2.1
+ * @link    https://picocms.org
+ * @license https://opensource.org/licenses/MIT The MIT License
+ * @version 3.0
  */
 class PicoDeprecated extends AbstractPicoPlugin
 {
+    /**
+     * PicoDeprecated version
+     *
+     * @var string
+     */
+    public const VERSION = '3.0.0-dev';
+
+    /**
+     * PicoDeprecated version ID
+     *
+     * @var int
+     */
+    public const VERSION_ID = 30000;
+
     /**
      * API version used by this plugin
      *
      * @var int
      */
-    const API_VERSION = 3;
+    public const API_VERSION = 4;
 
     /**
      * API version 0, used by Pico 0.9 and earlier
      *
      * @var int
      */
-    const API_VERSION_0 = 0;
+    public const API_VERSION_0 = 0;
 
     /**
      * API version 1, used by Pico 1.0
      *
      * @var int
      */
-    const API_VERSION_1 = 1;
+    public const API_VERSION_1 = 1;
 
     /**
      * API version 2, used by Pico 2.0
      *
      * @var int
      */
-    const API_VERSION_2 = 2;
+    public const API_VERSION_2 = 2;
 
     /**
      * API version 3, used by Pico 2.1
      *
      * @var int
      */
-    const API_VERSION_3 = 3;
+    public const API_VERSION_3 = 3;
+
+    /**
+     * API version 4, used by Pico 3.0
+     *
+     * @var int
+     */
+    public const API_VERSION_4 = 4;
 
     /**
      * Loaded plugins, indexed by API version
@@ -79,16 +104,16 @@ class PicoDeprecated extends AbstractPicoPlugin
      *
      * @var object[]
      */
-    protected $plugins = array();
+    protected $plugins = [];
 
     /**
      * Loaded compatibility plugins
      *
      * @see PicoDeprecated::getCompatPlugins()
      *
-     * @var PicoCompatPluginInterface[]
+     * @var PluginInterface[]
      */
-    protected $compatPlugins = array();
+    protected $compatPlugins = [];
 
     /**
      * {@inheritDoc}
@@ -101,7 +126,7 @@ class PicoDeprecated extends AbstractPicoPlugin
             require(__DIR__ . '/vendor/autoload.php');
         }
 
-        if (!class_exists('PicoMainCompatPlugin')) {
+        if (!class_exists(MainPlugin::class)) {
             die(
                 "Cannot find PicoDeprecated's 'vendor/autoload.php'. If you're using a composer-based Pico install, "
                 . "run `composer update`. If you're rather trying to use one of PicoDeprecated's pre-built release "
@@ -133,7 +158,7 @@ class PicoDeprecated extends AbstractPicoPlugin
                     if ($plugin->getApiVersion() === static::API_VERSION) {
                         $plugin->handleEvent($eventName, $params);
                     }
-                } elseif ($plugin instanceof PicoPluginApiCompatPluginInterface) {
+                } elseif ($plugin instanceof PluginApiPluginInterface) {
                     $plugin->handleCustomEvent($eventName, $params);
                 }
             }
@@ -150,13 +175,13 @@ class PicoDeprecated extends AbstractPicoPlugin
      */
     public function onPluginsLoaded(array $plugins)
     {
-        $this->loadCompatPlugin('PicoMainCompatPlugin');
+        $this->loadCompatPlugin(MainPlugin::class);
 
         foreach ($plugins as $plugin) {
             $this->loadPlugin($plugin);
         }
 
-        $this->getPico()->triggerEvent('onPicoDeprecated', array($this));
+        $this->getPico()->triggerEvent('onPicoDeprecated', [ $this ]);
     }
 
     /**
@@ -199,7 +224,7 @@ class PicoDeprecated extends AbstractPicoPlugin
 
         $apiVersion = $this->getPluginApiVersion($plugin);
         if (!isset($this->plugins[$apiVersion])) {
-            $this->plugins[$apiVersion] = array();
+            $this->plugins[$apiVersion] = [];
             $this->loadPluginApiCompatPlugin($apiVersion);
         }
 
@@ -215,16 +240,16 @@ class PicoDeprecated extends AbstractPicoPlugin
      */
     public function getPlugins($apiVersion)
     {
-        return isset($this->plugins[$apiVersion]) ? $this->plugins[$apiVersion] : array();
+        return isset($this->plugins[$apiVersion]) ? $this->plugins[$apiVersion] : [];
     }
 
     /**
      * Loads a compatibility plugin
      *
-     * @param PicoCompatPluginInterface|string $plugin either the class name of
-     *     a plugin to instantiate or a plugin instance
+     * @param PluginInterface|string $plugin either the class name of a plugin
+     *     to instantiate or a plugin instance
      *
-     * @return PicoCompatPluginInterface instance of the loaded plugin
+     * @return PluginInterface instance of the loaded plugin
      */
     public function loadCompatPlugin($plugin)
     {
@@ -244,10 +269,10 @@ class PicoDeprecated extends AbstractPicoPlugin
             return $this->compatPlugins[$className];
         }
 
-        if (!($plugin instanceof PicoCompatPluginInterface)) {
+        if (!($plugin instanceof PluginInterface)) {
             throw new RuntimeException(
                 "Unable to load PicoDeprecated compatibility plugin '" . $className . "': "
-                . "Compatibility plugins must implement 'PicoCompatPluginInterface'"
+                . "Compatibility plugins must implement '" . PluginInterface::class . "'"
             );
         }
 
@@ -272,7 +297,7 @@ class PicoDeprecated extends AbstractPicoPlugin
     protected function loadPluginApiCompatPlugin($apiVersion)
     {
         if ($apiVersion !== static::API_VERSION) {
-            $this->loadCompatPlugin('PicoPluginApi' . $apiVersion . 'CompatPlugin');
+            $this->loadCompatPlugin('picocms\PicoDeprecated\Plugin\PluginApi' . $apiVersion . 'Plugin');
         }
     }
 
@@ -284,14 +309,14 @@ class PicoDeprecated extends AbstractPicoPlugin
     protected function loadThemeApiCompatPlugin($apiVersion)
     {
         if ($apiVersion !== static::API_VERSION) {
-            $this->loadCompatPlugin('PicoThemeApi' . $apiVersion . 'CompatPlugin');
+            $this->loadCompatPlugin('picocms\PicoDeprecated\Plugin\ThemeApi' . $apiVersion . 'Plugin');
         }
     }
 
     /**
      * Returns all loaded compatibility plugins
      *
-     * @return PicoCompatPluginInterface[] list of loaded compatibility plugins
+     * @return PluginInterface[] list of loaded compatibility plugins
      */
     public function getCompatPlugins()
     {
@@ -313,7 +338,7 @@ class PicoDeprecated extends AbstractPicoPlugin
      * @param string $eventName  event to trigger
      * @param array  $params     optional parameters to pass
      */
-    public function triggerEvent($apiVersion, $eventName, array $params = array())
+    public function triggerEvent($apiVersion, $eventName, array $params = [])
     {
         foreach ($this->getPlugins($apiVersion) as $plugin) {
             $plugin->handleEvent($eventName, $params);
@@ -347,7 +372,7 @@ class PicoDeprecated extends AbstractPicoPlugin
      */
     public function getCoreEvents()
     {
-        return array(
+        return [
             'onPluginsLoaded',
             'onPluginManuallyLoaded',
             'onConfigLoaded',
@@ -377,7 +402,7 @@ class PicoDeprecated extends AbstractPicoPlugin
             'onMetaHeaders',
             'onYamlParserRegistered',
             'onParsedownRegistered',
-            'onTwigRegistered'
-        );
+            'onTwigRegistered',
+        ];
     }
 }

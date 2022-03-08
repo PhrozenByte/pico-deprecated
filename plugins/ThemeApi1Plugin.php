@@ -4,7 +4,7 @@
  * in the version control history of the file, available from the following
  * original location:
  *
- * <https://github.com/picocms/pico-deprecated/blob/master/plugins/PicoThemeApi1CompatPlugin.php>
+ * <https://github.com/picocms/pico-deprecated/blob/master/plugins/ThemeApi1Plugin.php>
  *
  * This file was created by splitting up an original file into multiple files,
  * which in turn was previously part of the project's main repository. The
@@ -18,28 +18,34 @@
  * License-Filename: LICENSE
  */
 
+namespace picocms\PicoDeprecated\Plugin;
+
+use picocms\PicoDeprecated\AbstractPlugin;
+use PicoDeprecated;
+use Twig\Error\LoaderError as TwigLoaderError;
+
 /**
  * Maintains backward compatibility with themes using API version 1, written
  * for Pico 1.0
  *
  * @author  Daniel Rudolf
- * @link    http://picocms.org
- * @license http://opensource.org/licenses/MIT The MIT License
- * @version 2.1
+ * @link    https://picocms.org
+ * @license https://opensource.org/licenses/MIT The MIT License
+ * @version 3.0
  */
-class PicoThemeApi1CompatPlugin extends AbstractPicoCompatPlugin
+class ThemeApi1Plugin extends AbstractPlugin
 {
     /**
-     * This plugin extends {@see PicoThemeApi2CompatPlugin}
+     * This plugin extends {@see ThemeApi2Plugin}
      *
      * @var string[]
      */
-    protected $dependsOn = array('PicoThemeApi2CompatPlugin');
+    protected $dependsOn = [ ThemeApi2Plugin::class ];
 
     /**
      * Lowers the page's meta headers
      *
-     * @see PicoThemeApi1CompatPlugin::lowerFileMeta()
+     * @see ThemeApi1Plugin::lowerFileMeta()
      *
      * @param string[] &$meta parsed meta data
      */
@@ -51,7 +57,7 @@ class PicoThemeApi1CompatPlugin extends AbstractPicoCompatPlugin
     /**
      * Lowers the page's meta headers
      *
-     * @see PicoThemeApi1CompatPlugin::lowerFileMeta()
+     * @see ThemeApi1Plugin::lowerFileMeta()
      *
      * @param array &$pageData data of the loaded page
      */
@@ -88,19 +94,19 @@ class PicoThemeApi1CompatPlugin extends AbstractPicoCompatPlugin
 
         // API v2 requires themes to use .twig as file extension
         // try to load the template and if this fails, try .html instead (as of API v1)
-        $templateNameInfo = pathinfo($templateName) + array('extension' => '');
+        $templateNameInfo = pathinfo($templateName) + [ 'extension' => '' ];
         $twig = $this->getPico()->getTwig();
 
         try {
             $twig->loadTemplate($templateName);
-        } catch (Twig_Error_Loader $e) {
+        } catch (TwigLoaderError $e) {
             if ($templateNameInfo['extension'] === 'twig') {
                 try {
                     $twig->loadTemplate($templateNameInfo['filename'] . '.html');
 
                     $templateName = $templateNameInfo['filename'] . '.html';
                     $templateNameInfo['extension'] = 'html';
-                } catch (Twig_Error_Loader $e) {
+                } catch (TwigLoaderError $e) {
                     // template doesn't exist, Twig will very likely fail later
                 }
             }
@@ -120,7 +126,7 @@ class PicoThemeApi1CompatPlugin extends AbstractPicoCompatPlugin
         $metaHeaders = $this->getPico()->getMetaHeaders();
 
         // get unregistered meta
-        $unregisteredMeta = array();
+        $unregisteredMeta = [];
         foreach ($meta as $key => $value) {
             if (!in_array($key, $metaHeaders)) {
                 $unregisteredMeta[$key] = &$meta[$key];

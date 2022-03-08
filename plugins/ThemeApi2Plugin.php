@@ -4,7 +4,7 @@
  * in the version control history of the file, available from the following
  * original location:
  *
- * <https://github.com/picocms/pico-deprecated/blob/master/plugins/PicoThemeApi2CompatPlugin.php>
+ * <https://github.com/picocms/pico-deprecated/blob/master/plugins/ThemeApi2Plugin.php>
  *
  * This file was created by splitting up an original file into multiple files,
  * which in turn was previously part of the project's main repository. The
@@ -18,16 +18,25 @@
  * License-Filename: LICENSE
  */
 
+namespace picocms\PicoDeprecated\Plugin;
+
+use picocms\PicoDeprecated\AbstractPlugin;
+use PicoDeprecated;
+use Twig\Environment as TwigEnvironment;
+use Twig\Error\LoaderError as TwigLoaderError;
+use Twig\Extension\EscaperExtension as TwigEscaperExtension;
+use Twig\Loader\LoaderInterface as TwigLoaderInterface;
+
 /**
  * Maintains backward compatibility with themes using API version 2, written
  * for Pico 2.0
  *
  * @author  Daniel Rudolf
- * @link    http://picocms.org
- * @license http://opensource.org/licenses/MIT The MIT License
- * @version 2.1
+ * @link    https://picocms.org
+ * @license https://opensource.org/licenses/MIT The MIT License
+ * @version 3.0
  */
-class PicoThemeApi2CompatPlugin extends AbstractPicoCompatPlugin
+class ThemeApi2Plugin extends AbstractPlugin
 {
     /**
      * Manually configured Twig escape strategy
@@ -41,12 +50,12 @@ class PicoThemeApi2CompatPlugin extends AbstractPicoCompatPlugin
      *
      * @var string[]
      */
-    protected $pluginPaths = array();
+    protected $pluginPaths = [];
 
     /**
-     * Sets PicoThemeApi2CompatPlugin::$twigEscapeStrategy
+     * Sets ThemeApi2Plugin::$twigEscapeStrategy
      *
-     * @see PicoThemeApi2CompatPlugin::$twigEscapeStrategy
+     * @see ThemeApi2Plugin::$twigEscapeStrategy
      *
      * @param array &$config array of config variables
      */
@@ -71,19 +80,19 @@ class PicoThemeApi2CompatPlugin extends AbstractPicoCompatPlugin
     }
 
     /**
-     * Registers PicoPluginApi2CompatPlugin::twigEscapeStrategy() as Twig's
-     * default escape strategy
+     * Registers PluginApi2Plugin::twigEscapeStrategy() as Twig's default
+     * escape strategy
      *
-     * @see PicoPluginApi2CompatPlugin::twigEscapeStrategy()
+     * @see PluginApi2Plugin::twigEscapeStrategy()
      *
-     * @param Twig_Environment &$twig Twig instance
+     * @param TwigEnvironment &$twig Twig instance
      */
-    public function onTwigRegistered(Twig_Environment &$twig)
+    public function onTwigRegistered(TwigEnvironment &$twig)
     {
-        if ($twig->hasExtension('Twig_Extension_Escaper')) {
-            /** @var Twig_Extension_Escaper $escaperExtension */
-            $escaperExtension = $twig->getExtension('Twig_Extension_Escaper');
-            $escaperExtension->setDefaultStrategy(array($this, 'twigEscapeStrategy'));
+        if ($twig->hasExtension(TwigEscaperExtension::class)) {
+            /** @var TwigEscaperExtension $escaperExtension */
+            $escaperExtension = $twig->getExtension(TwigEscaperExtension::class);
+            $escaperExtension->setDefaultStrategy([ $this, 'twigEscapeStrategy' ]);
         }
     }
 
@@ -118,24 +127,18 @@ class PicoThemeApi2CompatPlugin extends AbstractPicoCompatPlugin
             return false;
         }
 
-        /** @var Twig_SourceContextLoaderInterface $twigLoader */
+        /** @var TwigLoaderInterface $twigLoader */
         $twigLoader = $this->getPico()->getTwig()->getLoader();
-        if (!$twigLoader instanceof Twig_SourceContextLoaderInterface) {
-            throw new RuntimeException(
-                "PicoDeprecated compat plugin '" . __CLASS__ . "' requires a 'Twig_SourceContextLoaderInterface' "
-                . "Twig loader, '" . get_class($twigLoader) . "' given"
-            );
-        }
 
         try {
             $templatePath = $twigLoader->getSourceContext($templateName)->getPath();
-        } catch (\Twig\Error\LoaderError $e) {
+        } catch (TwigLoaderError $e) {
             $templatePath = '';
         }
 
         if ($templatePath) {
             $themePath = realpath($this->getPico()->getThemesDir() . $this->getPico()->getTheme()) . '/';
-            if (substr($templatePath, 0, strlen($themePath)) === $themePath) {
+            if (substr_compare($templatePath, $themePath, 0, strlen($themePath)) === 0) {
                 $themeApiVersion = $this->getPico()->getThemeApiVersion();
                 return ($themeApiVersion >= PicoDeprecated::API_VERSION_3) ? $escapeStrategy : false;
             }
@@ -164,7 +167,7 @@ class PicoThemeApi2CompatPlugin extends AbstractPicoCompatPlugin
     {
         $plugins = $this->getPico()->getPlugins();
         foreach ($this->pluginPaths as $pluginName => $pluginPath) {
-            if ($pluginPath && (substr($path, 0, strlen($pluginPath)) === $pluginPath)) {
+            if ($pluginPath && (substr_compare($path, $pluginPath, 0, strlen($pluginPath)) === 0)) {
                 return $plugins[$pluginName];
             }
         }
@@ -178,16 +181,16 @@ class PicoThemeApi2CompatPlugin extends AbstractPicoCompatPlugin
                 continue;
             }
 
-            $pluginReflector = new ReflectionObject($plugin);
+            $pluginReflector = new \ReflectionObject($plugin);
 
             $pluginPath = dirname($pluginReflector->getFileName() ?: '') . '/';
-            if (in_array($pluginPath, array('/', $rootDir, $vendorDir, $pluginsDir, $themesDir), true)) {
+            if (in_array($pluginPath, [ '/', $rootDir, $vendorDir, $pluginsDir, $themesDir ], true)) {
                 $pluginPath = '';
             }
 
             $this->pluginPaths[$pluginName] = $pluginPath;
 
-            if ($pluginPath && (substr($path, 0, strlen($pluginPath)) === $pluginPath)) {
+            if ($pluginPath && (substr_compare($path, $pluginPath, 0, strlen($pluginPath)) === 0)) {
                 return $plugins[$pluginName];
             }
         }
